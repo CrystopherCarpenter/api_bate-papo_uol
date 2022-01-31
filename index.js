@@ -89,13 +89,13 @@ server.post('/status', async (req, res) => {
         }
 });
 
-setInterval(async () => {
+const autoremove = setInterval(async () => {
         const participants = await db.collection('participants').find().toArray();
         participants.forEach(async (participant) => {
                 if ((Date.now() - participant.lastStatus) > 10000) {
-                        await db.collection('participants').deleteOne({ name: participant.name })        
-                }                
-        })
-}, 15000);
+                        const time = dayjs().format('HH:mm:ss');
+                        await db.collection('participants').deleteOne({ name: participant.name })
+                        db.collection('messages').insertOne({from: participant.name, to: 'Todos', text: 'sai da sala...', type: 'status', time});
+                }})}, 15000);
 
 server.listen(5000)
