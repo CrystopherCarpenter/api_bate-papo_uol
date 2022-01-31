@@ -17,13 +17,18 @@ const server = express();
 server.use(cors());
 server.use(express.json());
 
+
+
 server.post('/participants', async (req, res) => {
+        const time = dayjs().format('HH:mm:ss');    
+        const participant = req.body;
+        const from = req.body.name;
+       
         try {
-                const participant = req.body;
-                
                 await db.collection('participants').insertOne({ ...participant, lastStatus: Date.now() });
+                db.collection('messages').insertOne({from, to: 'Todos', text: 'entra na sala...', type: 'status', time});
                 
-                res.status(201).send({ ...participant, lastStatus: Date.now() });
+                res.sendStatus(201);
         } catch (error) {
                 res.sendStatus(422);
         }
@@ -43,9 +48,10 @@ server.post('/messages', async (req, res) => {
         const user = req.headers.user;
         const time = dayjs().format('HH:mm:ss');
 
+
   try {
           await db.collection('messages').insertOne({ ...message, time, from: user });
-    res.sendStatus(201);
+    res.status(201).send(time);
   } catch (error) {
     console.error(error);
     res.sendStatus(500);
