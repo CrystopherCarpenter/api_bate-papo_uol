@@ -1,8 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import joi from 'joi';
-import { MongoClient, ObjectId } from "mongodb";
-import dayjs from 'dayjs'
+import { MongoClient} from "mongodb";
+import dayjs from 'dayjs';
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -25,7 +25,7 @@ server.post('/participants', async (req, res) => {
                 name: joi.string().required()
         });
 
-        const validation = schema.validate(participant)
+        const validation = schema.validate(participant);
 
         if (validation.error) {
                 res.sendStatus(422);
@@ -49,17 +49,29 @@ server.get('/participants', async (req, res) => {
 });
 
 server.post('/messages', async (req, res) => {
-        const message = req.body;
-        const user = req.headers.user;
+        const from = req.headers.user;
+        const participants = [];
+        const usersOnline = await db.collection('participants').find().toArray();
+        usersOnline.forEach((participant => {
+                participants.push(participant.name);
+        }))
+        const message = { ...req.body, from };
+        const schema = joi.object({
+                to: joi.string().required(),
+                text: joi.string().required(),
+                type: joi.any().valid('message', 'private_message'),
+                from: joi.any().valid(...participants),
+        });
+        const validation = schema.validate(message);
         const time = dayjs().format('HH:mm:ss');
 
-  try {
-          await db.collection('messages').insertOne({ ...message, time, from: user });
-    res.sendStatus(201);
-  } catch (error) {
-    console.error(error);
-    res.sendStatus(422);
-  }
+        if (validation.error) {
+                res.sendStatus(422);
+                return;
+        }
+
+        await db.collection('messages').insertOne({...message, time});
+        res.sendStatus(201);
 });
 
 server.get('/messages', async (req, res) => {
@@ -69,10 +81,16 @@ server.get('/messages', async (req, res) => {
                 $or: [{
                         $and: [
                                 { type: { $in: ['message', 'status'] } },
-                                { to: 'Todos' }]},
-                        { to: user },
-                        { from: user }
-                ]
+                                { to: 'Todos' }]
+                },
+                {
+                        $and: [
+                                { type: 'private_message' }, {
+                                        $or: [
+                                                { to: user },
+                                                { from: user }]
+                                }]
+                }]
         }).toArray();
                 limit ? res.send(messages.slice(-limit)) : res.send(messages);
 });
@@ -84,16 +102,16 @@ server.post('/status', async (req, res) => {
                 res.sendStatus(404);
                 return;
         } 
-        await db.collection('participants').updateOne({ name: user }, { $set: { lastStatus: Date.now() } })
+        await db.collection('participants').updateOne({ name: user }, { $set: { lastStatus: Date.now() } });
         res.sendStatus(200);
 });
 
-const autoremove = setInterval(async () => {
+setInterval(async () => {
         const participants = await db.collection('participants').find().toArray();
         participants.forEach(async (participant) => {
                 if ((Date.now() - participant.lastStatus) > 10000) {
                         const time = dayjs().format('HH:mm:ss');
-                        await db.collection('participants').deleteOne({ name: participant.name })
+                        await db.collection('participants').deleteOne({ name: participant.name });
                         db.collection('messages').insertOne({from: participant.name, to: 'Todos', text: 'sai da sala...', type: 'status', time});
                 }})}, 15000);
 

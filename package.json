@@ -18,5 +18,8 @@
     "express": "^4.17.2",
     "joi": "^17.6.0",
     "mongodb": "^4.3.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.8.0"
   }
 }
