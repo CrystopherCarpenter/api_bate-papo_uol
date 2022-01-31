@@ -83,7 +83,7 @@ server.post('/status', async (req, res) => {
                          return;
                  } 
                  await db.collection('participants').updateOne({ name: user }, { $set: { lastStatus: Date.now() } })
-                 res.sendStatus(201)
+                 res.sendStatus(200)
         } catch (error) {
                 res.sendStatus(500);
         }
