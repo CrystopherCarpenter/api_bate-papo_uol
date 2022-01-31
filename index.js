@@ -83,15 +83,9 @@ server.get('/messages', async (req, res) => {
                                 { type: { $in: ['message', 'status'] } },
                                 { to: 'Todos' }]
                 },
-                {
-                        $and: [
-                                { type: 'private_message' }, {
-                                        $or: [
-                                                { to: user },
-                                                { from: user }]
-                                }]
-                }]
-        }).toArray();
+                { to: user },
+                { from: user }
+                ]}).toArray();
                 limit ? res.send(messages.slice(-limit)) : res.send(messages);
 });
 
