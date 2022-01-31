@@ -36,11 +36,14 @@ server.post('/participants', async (req, res) => {
                 res.sendStatus(409);
                 return;
         }
-       
+        try{
         await db.collection('participants').insertOne({ ...participant, lastStatus: Date.now() });
         db.collection('messages').insertOne({from, to: 'Todos', text: 'entra na sala...', type: 'status', time});
         
-        res.sendStatus(201);
+                res.sendStatus(201);
+        } catch {
+                res.sendStatus(500)
+        }
 });
 
 server.get('/participants', async (req, res) => {
@@ -69,9 +72,12 @@ server.post('/messages', async (req, res) => {
                 res.sendStatus(422);
                 return;
         }
-
+        try{
         await db.collection('messages').insertOne({...message, time});
         res.sendStatus(201);
+        } catch {
+                res.sendStatus(500)
+        }
 });
 
 server.get('/messages', async (req, res) => {
@@ -95,9 +101,13 @@ server.post('/status', async (req, res) => {
         if (!participant) {
                 res.sendStatus(404);
                 return;
-        } 
+        }
+        try{
         await db.collection('participants').updateOne({ name: user }, { $set: { lastStatus: Date.now() } });
         res.sendStatus(200);
+        } catch {
+                res.sendStatus(500)
+        }
 });
 
 setInterval(async () => {
