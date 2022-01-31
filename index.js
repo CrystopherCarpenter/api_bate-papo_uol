@@ -1,57 +1,8 @@
-/*import express, {json} from 'express';
-import cors from 'cors';
-import joi from 'joi';
-import { MongoClient, ObjectId } from "mongodb";
-import dotenv from "dotenv";
-
-dotenv.config();
-
-const server = express();
-
-server.use(cors());
-server.use(json);
-
-const newLocal = process.env.MONGO_URI;
-const mongoClient = new MongoClient(newLocal);
-let db
-
-mongoClient.connect(()=>{
-                db = mongoClient.db("users");
-                });
-
-server.post('/participants', async (req, res) => {
-        try {
-                const products = await db.collection('users').find()
-                res.send(`fui!`);
-
-        } catch (error) {
-                res.status(error).send(`não fui!`);
-        }
-});
-
-server.get('/participants', (req, res) => {
-
-})
-
-server.post('/messages', (req, res) => {
-
-})
-
-server.get('/messages', (req, res) => {
-
-})
-
-server.post('/status', (req, res) => {
-
-})
-
-server.listen(5000);
-*/
-
 import express from 'express';
 import cors from 'cors';
 import joi from 'joi';
 import { MongoClient, ObjectId } from "mongodb";
+import dayjs from 'dayjs'
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -90,15 +41,16 @@ server.get('/participants', async (req, res) => {
 server.post('/messages', async (req, res) => {
         const message = req.body;
         const user = req.headers.user;
+        const time = dayjs().format('HH:mm:ss');
+
   try {
-          await db.collection('messages').insertOne({ ...message, time: "Hh", from: user });
-    res.status(201).send();
+          await db.collection('messages').insertOne({ ...message, time, from: user });
+    res.sendStatus(201);
   } catch (error) {
     console.error(error);
     res.sendStatus(500);
   }
 });
-
 
 
 server.listen(5000)
