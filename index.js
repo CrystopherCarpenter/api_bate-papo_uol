@@ -89,6 +89,13 @@ server.post('/status', async (req, res) => {
         }
 });
 
-setInterval
+setInterval(async () => {
+        const participants = await db.collection('participants').find().toArray();
+        participants.forEach(async (participant) => {
+                if ((Date.now() - participant.lastStatus) > 10000) {
+                        await db.collection('participants').deleteOne({ name: participant.name })        
+                }                
+        })
+}, 15000);
 
 server.listen(5000)
