@@ -21,24 +21,31 @@ server.post('/participants', async (req, res) => {
         const time = dayjs().format('HH:mm:ss');    
         const participant = req.body;
         const from = req.body.name;
-       
-        try {
-                await db.collection('participants').insertOne({ ...participant, lastStatus: Date.now() });
-                db.collection('messages').insertOne({from, to: 'Todos', text: 'entra na sala...', type: 'status', time});
-                
-                res.sendStatus(201);
-        } catch (error) {
+        const schema = joi.object({
+                name: joi.string().required()
+        });
+
+        const validation = schema.validate(participant)
+
+        if (validation.error) {
                 res.sendStatus(422);
+                return;
         }
+
+        if (await db.collection('participants').findOne({ name: participant.name })) {
+                res.sendStatus(409);
+                return;
+        }
+       
+        await db.collection('participants').insertOne({ ...participant, lastStatus: Date.now() });
+        db.collection('messages').insertOne({from, to: 'Todos', text: 'entra na sala...', type: 'status', time});
+        
+        res.sendStatus(201);
 });
 
 server.get('/participants', async (req, res) => {
-        try {
-                const participants = await db.collection('participants').find().toArray();
-                res.send(participants);
-        } catch (error) {
-                res.sendStatus(500);
-        }
+        const participants = await db.collection('participants').find().toArray();
+        res.send(participants);
 });
 
 server.post('/messages', async (req, res) => {
@@ -58,35 +65,27 @@ server.post('/messages', async (req, res) => {
 server.get('/messages', async (req, res) => {
         const user = req.headers.user;
         const limit = parseInt(req.query.limit);
-        try {
-                const messages = await db.collection('messages').find({
-                        $or: [{
-                                $and: [
-                                        { type: { $in: ['message', 'status'] } },
-                                        { to: 'Todos' }]},
-                                { to: user },
-                                { from: user }
-                        ]
-                }).toArray();
+        const messages = await db.collection('messages').find({
+                $or: [{
+                        $and: [
+                                { type: { $in: ['message', 'status'] } },
+                                { to: 'Todos' }]},
+                        { to: user },
+                        { from: user }
+                ]
+        }).toArray();
                 limit ? res.send(messages.slice(-limit)) : res.send(messages);
-        } catch (error) {
-                res.sendStatus(500);
-        }
 });
 
 server.post('/status', async (req, res) => {
         const user = req.headers.user;
-         try {
-                const participant = await db.collection('participants').findOne({ name: user });
-                 if (!participant) {
-                         res.sendStatus(404);
-                         return;
-                 } 
-                 await db.collection('participants').updateOne({ name: user }, { $set: { lastStatus: Date.now() } })
-                 res.sendStatus(200)
-        } catch (error) {
-                res.sendStatus(500);
-        }
+        const participant = await db.collection('participants').findOne({ name: user });
+        if (!participant) {
+                res.sendStatus(404);
+                return;
+        } 
+        await db.collection('participants').updateOne({ name: user }, { $set: { lastStatus: Date.now() } })
+        res.sendStatus(200);
 });
 
 const autoremove = setInterval(async () => {
