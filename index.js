@@ -10,7 +10,7 @@ const mongoClient = new MongoClient(process.env.MONGO_URI);
 let db;
 
 mongoClient.connect(() => {
-  db = mongoClient.db("bate-papo");
+        db = mongoClient.db("bate-papo");
 });
 
 const server = express();
@@ -35,12 +35,12 @@ server.post('/participants', async (req, res) => {
 });
 
 server.get('/participants', async (req, res) => {
-  try {
-    const participants = await db.collection('participants').find().toArray();
-    res.send(participants);
-  } catch (error) {
-    res.sendStatus(500);
-  }
+        try {
+                const participants = await db.collection('participants').find().toArray();
+                res.send(participants);
+        } catch (error) {
+                res.sendStatus(500);
+        }
 });
 
 server.post('/messages', async (req, res) => {
@@ -54,8 +54,42 @@ server.post('/messages', async (req, res) => {
     res.status(201).send(time);
   } catch (error) {
     console.error(error);
-    res.sendStatus(500);
+    res.sendStatus(422);
   }
+});
+
+server.get('/messages', async (req, res) => {
+        const user = req.headers.user;
+        const limit = parseInt(req.query.limit);
+        try {
+                const messages = await db.collection('messages').find({
+                        $or: [{
+                                $and: [
+                                        { type: { $in: ['message', 'status'] } },
+                                        { to: 'Todos' }]},
+                                { to: user },
+                                { from: user }
+                        ]
+                }).toArray();
+                if (limit) {
+                        res.send(messages.slice(-limit));
+                } else{
+                        res.send(messages);
+                }
+        } catch (error) {
+                res.sendStatus(500);
+        }
+});
+
+server.post('/status', async (req, res) => {
+        const user = req.headers.user;
+         try {
+                await db.collection('participants').insertOne({ name: user, lastStatus: Date.now() });
+                
+                res.sendStatus(201);
+        } catch (error) {
+                res.sendStatus(422);
+        }
 });
 
 
