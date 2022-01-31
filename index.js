@@ -17,8 +17,6 @@ const server = express();
 server.use(cors());
 server.use(express.json());
 
-
-
 server.post('/participants', async (req, res) => {
         const time = dayjs().format('HH:mm:ss');    
         const participant = req.body;
@@ -48,10 +46,9 @@ server.post('/messages', async (req, res) => {
         const user = req.headers.user;
         const time = dayjs().format('HH:mm:ss');
 
-
   try {
           await db.collection('messages').insertOne({ ...message, time, from: user });
-    res.status(201).send(time);
+    res.sendStatus(201);
   } catch (error) {
     console.error(error);
     res.sendStatus(422);
@@ -80,13 +77,18 @@ server.get('/messages', async (req, res) => {
 server.post('/status', async (req, res) => {
         const user = req.headers.user;
          try {
-                await db.collection('participants').insertOne({ name: user, lastStatus: Date.now() });
-                
-                res.sendStatus(201);
+                const participant = await db.collection('participants').findOne({ name: user });
+                 if (!participant) {
+                         res.sendStatus(404);
+                         return;
+                 } 
+                 await db.collection('participants').updateOne({ name: user }, { $set: { lastStatus: Date.now() } })
+                 res.sendStatus(201)
         } catch (error) {
-                res.sendStatus(422);
+                res.sendStatus(500);
         }
 });
 
+setInterval
 
 server.listen(5000)
