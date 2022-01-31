@@ -71,11 +71,7 @@ server.get('/messages', async (req, res) => {
                                 { from: user }
                         ]
                 }).toArray();
-                if (limit) {
-                        res.send(messages.slice(-limit));
-                } else{
-                        res.send(messages);
-                }
+                limit ? res.send(messages.slice(-limit)) : res.send(messages);
         } catch (error) {
                 res.sendStatus(500);
         }
